@@ -43,7 +43,27 @@ class QuizViewController: UIViewController, UITableViewDelegate, UITableViewData
         
         self.question = quiz[questionIndex]
         
-        if let text = question["question"] as? String {
+        if let text = question["text"] as? String {
+            questionLabel.text = text
+        }
+        
+        if let options = question["answers"] as? [String] {
+            answers = options
+        }
+        answersTable.delegate = self
+        answersTable.dataSource = self
+        answersTable.allowsMultipleSelection = false
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        self.questionIndex = 0
+        self.score = 0
+        
+        self.question = quiz[questionIndex]
+        
+        if let text = question["text"] as? String {
             questionLabel.text = text
         }
         
@@ -65,13 +85,14 @@ class QuizViewController: UIViewController, UITableViewDelegate, UITableViewData
             questionStackView.isHidden = true
             answerStackView.isHidden = false
             
-            if let answer = question["answer"] as? Int{
-                if answer == selectedAnswers {
-                    answerLabel.text = "Yay you got it correct. The answer is \(answers[answer])."
+            if let answer = question["answer"] as? String {
+                let toInt = Int(answer)
+                if toInt == selectedAnswers {
+                    answerLabel.text = "Yay you got it correct. The answer is \(answers[toInt!])."
                     answerLabel.textColor = UIColor.systemGreen
                     score += 1
                 } else {
-                    answerLabel.text = "You got the question wrong. The answer is \(answers[answer])."
+                    answerLabel.text = "You got the question wrong. The answer is \(answers[toInt!])."
                     answerLabel.textColor = UIColor.systemRed
                 }
             }
@@ -84,7 +105,7 @@ class QuizViewController: UIViewController, UITableViewDelegate, UITableViewData
         
         if questionIndex < quiz.count {
             self.question = quiz[questionIndex]
-            if let text = question["question"] as? String {
+            if let text = question["text"] as? String {
                 questionLabel.text = text
             }
             
