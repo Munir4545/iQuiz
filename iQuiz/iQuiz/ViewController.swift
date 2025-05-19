@@ -137,15 +137,7 @@
                             print("network error")
                         }
                     }
-                    let alertController = UIAlertController(title: "Network Error", message: "Check Network Connection", preferredStyle: .alert)
-                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                    if Thread.isMainThread {
-                        self.present(alertController, animated: true, completion: nil)
-                    } else {
-                        DispatchQueue.main.async {
-                            self.present(alertController, animated: true, completion: nil)
-                        }
-                    }
+                    
                 }
                 
                 guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
