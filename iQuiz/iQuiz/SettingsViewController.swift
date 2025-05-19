@@ -96,7 +96,7 @@ class SettingsViewController: UIViewController {
         for topicDict in transformData {
             if let title = topicDict["title"] as? String,
                let desc = topicDict["desc"] as? String {
-                output.append([title, desc, "default_icon.png"]) 
+                output.append([title, desc, "default_icon.png"])
             }
         }
         return output

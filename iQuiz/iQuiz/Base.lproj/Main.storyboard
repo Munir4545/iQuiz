@@ -81,7 +81,6 @@
                                     <barButtonItem title="Settings" id="KjK-zR-TdE">
                                         <connections>
                                             <action selector="settingsPressed:" destination="BYZ-38-t0r" id="B2l-cr-iZT"/>
-                                            <segue destination="X7u-Uc-2qY" kind="show" id="rUZ-K4-IyU"/>
                                         </connections>
                                     </barButtonItem>
                                 </items>
@@ -113,7 +112,7 @@
             <objects>
                 <viewController id="X7u-Uc-2qY" customClass="SettingsViewController" customModule="iQuiz" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="6F7-xX-Qzl">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="842"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="OQZ-u8-dJz">

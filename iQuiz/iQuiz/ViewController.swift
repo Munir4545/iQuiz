@@ -20,14 +20,21 @@
     class ViewController: UIViewController, UITableViewDelegate {
         
         @IBAction func settingsPressed(_ sender: Any) {
-            if let settingVC = storyboard?.instantiateViewController(withIdentifier: "SettingsViewControllerID") {
-                present(settingVC, animated: true, completion: nil)
+//            if let settingVC = storyboard?.instantiateViewController(withIdentifier: "SettingsViewControllerID") {
+//                present(settingVC, animated: true, completion: nil)
+//            }
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else {
+                        return
+                    }
+
+            if UIApplication.shared.canOpenURL(settingsUrl) {
+                UIApplication.shared.open(settingsUrl)
             }
         }
         
         @IBOutlet weak var quizTable: UITableView!
 
-        var quizTableData: iQuizTableDataModel!
+        var quizTableData: iQuizTableDataModel! = iQuizTableDataModel([])
         
         var questionData: [String: [[String: Any]]] = [:]
         
@@ -76,7 +83,30 @@
         
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
+            loadDataIn()
+            getData(urlString: UserDefaults.standard.string(forKey: "quizURL") ?? "http://tednewardsandbox.site44.com/questions.json")
             
+            quizTable.reloadData()
+            print("below is the quizTableData")
+            print(quizTableData)
+            print(questionData)
+        }
+        
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            // Do any additional setup after loading the view.
+            quizTable.dataSource = quizTableData
+            quizTable.delegate = self
+            loadDataIn()
+            getData(urlString: UserDefaults.standard.string(forKey: "quizURL") ?? "http://tednewardsandbox.site44.com/questions.json")
+
+            quizTable.reloadData()
+            print("below is the quizTableData")
+            print(quizTableData)
+            print(questionData)
+        }
+        
+        func loadDataIn() {
             if let categories = UserDefaults.standard.data(forKey: "categories") {
                 if let decodedCategories = try? PropertyListDecoder().decode([[String]].self, from: categories) {
                     self.quizTableData = iQuizTableDataModel(decodedCategories)
@@ -93,38 +123,100 @@
                     self.questionData = decodedQuestions
                 }
             }
-            
-            quizTable.reloadData()
-            print("below is the quizTableData")
-            print(quizTableData)
-            print(questionData)
         }
         
-        override func viewDidLoad() {
-            super.viewDidLoad()
-            // Do any additional setup after loading the view.
-            quizTable.dataSource = quizTableData
-            quizTable.delegate = self
-            if let categories = UserDefaults.standard.data(forKey: "categories") {
-                if let decodedCategories = try? PropertyListDecoder().decode([[String]].self, from: categories) {
-                    self.quizTableData = iQuizTableDataModel(decodedCategories)
-                    self.quizTable.dataSource = self.quizTableData
+        func getData(urlString: String) {
+            let url = URL(string: urlString)!
+            URLSession.shared.dataTask(with: url) {data, response, error in
+                
+                if let error = error {
+                    print("Network request error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        if let urlError = error as? URLError, urlError.code == .notConnectedToInternet {
+                            self.quizTable.reloadData()
+                            print("network error")
+                        }
+                    }
+                    let alertController = UIAlertController(title: "Network Error", message: "Check Network Connection", preferredStyle: .alert)
+                    alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                    if Thread.isMainThread {
+                        self.present(alertController, animated: true, completion: nil)
+                    } else {
+                        DispatchQueue.main.async {
+                            self.present(alertController, animated: true, completion: nil)
+                        }
+                    }
                 }
                 
-            }
-            
-            if let questionsData = UserDefaults.standard.data(forKey: "questions") { // Use matching key
-                if let questionsPlist = try? PropertyListSerialization.propertyList(from: questionsData, options: [], format: nil),
-                   let decodedQuestions = questionsPlist as? [String: [[String: Any]]] {
-                    
-                    self.questionData = decodedQuestions
+                guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+                    let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                    print("HTTP Error: Invalid response or status code \(statusCode)")
+                    return
+                }
+                
+                guard let validData = data else {
+                    print("No data received from server.")
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    do {
+                        let quizObject = try JSONSerialization.jsonObject(with: validData, options: .allowFragments)
+                        
+                        let categoriesArray = self.quizObjectToData(transformData: quizObject as! [[String : Any]])
+                        
+                        self.quizTableData = iQuizTableDataModel(categoriesArray)
+                        
+                        self.quizTable.dataSource = self.quizTableData
+                        self.quizTable.reloadData()
+                        
+                        let categoriesData = try PropertyListEncoder().encode(categoriesArray)
+                        
+                        UserDefaults.standard.set(categoriesData, forKey: "categories")
+                        
+                        self.questionData = self.quizObjectToTest(transformData: quizObject as! [[String : Any]])
+                        
+                        print(self.questionData)
+                        
+                        let questionsData = try PropertyListSerialization.data(
+                            fromPropertyList: self.questionData,
+                            format: .binary,
+                            options: 0
+                        )
+                        print("should print something")
+                        print(questionsData)
+                        
+                        UserDefaults.standard.set(questionsData, forKey: "questions")
+                        
+                        print("fetched data")
+                    } catch {
+                        print("JSON parsing error: \(error)")
+                        
+                    }
+                }
+            }.resume()
+        }
+        
+        func quizObjectToData(transformData: [[String: Any]]) -> [[String]] {
+            var output: [[String]] = []
+            for topicDict in transformData {
+                if let title = topicDict["title"] as? String,
+                   let desc = topicDict["desc"] as? String {
+                    output.append([title, desc, "default_icon.png"])
                 }
             }
-
-            quizTable.reloadData()
-            print("below is the quizTableData")
-            print(quizTableData)
-            print(questionData)
+            return output
+        }
+        
+        func quizObjectToTest(transformData: [[String: Any]]) -> [String: [[String: Any]]] {
+            var output: [String: [[String: Any]]] = [:]
+            for topic in transformData {
+                if let title = topic["title"] as? String,
+                   let rest = topic["questions"] as? [[String: Any]] {
+                    output[title] = rest
+                }
+            }
+            return output
         }
         
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
