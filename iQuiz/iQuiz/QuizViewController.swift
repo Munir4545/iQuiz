@@ -87,8 +87,8 @@ class QuizViewController: UIViewController, UITableViewDelegate, UITableViewData
             
             if let answer = question["answer"] as? String {
                 let toInt = Int(answer)
-                if toInt == selectedAnswers {
-                    answerLabel.text = "Yay you got it correct. The answer is \(answers[toInt!])."
+                if toInt!-1 == selectedAnswers {
+                    answerLabel.text = "Yay you got it correct. The answer is \(answers[toInt!-1])."
                     answerLabel.textColor = UIColor.systemGreen
                     score += 1
                 } else {
